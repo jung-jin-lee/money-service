@@ -145,6 +145,77 @@ public class SprinklingControllerTest {
     }
 
     @Test
+    public void 받기_API_는_요청_헤더에_사용자_아이디와_방번호가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
+        ErrorCode errorCode = ErrorCode.MISSING_REQUEST_HEADER_ERROR;
+        mockMvc.perform(
+                put("/sprinkling/receive")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 받기_API_는_요청_헤더에_방번호가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
+        ErrorCode errorCode = ErrorCode.MISSING_REQUEST_HEADER_ERROR;
+        mockMvc.perform(
+                put("/sprinkling/receive")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 1)
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 받기_API_는_요청_헤더에_사용자_아이디가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
+        ErrorCode errorCode = ErrorCode.MISSING_REQUEST_HEADER_ERROR;
+        mockMvc.perform(
+                put("/sprinkling/receive")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 받기_API_의_요청_바디에_토큰_길이가_3자리가_아닌채로_요청하면_400_응답을_반환해야_한다() throws Exception {
+        String sprinklingReceiveRequestBody = createSprinklingReceiveRequestString("c0");
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY_ERROR;
+        mockMvc.perform(
+                put("/sprinkling/receive")
+                        .content(sprinklingReceiveRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+
+        String sprinklingReceiveRequestBody2 = createSprinklingReceiveRequestString("c0f9");
+        mockMvc.perform(
+                put("/sprinkling/receive")
+                        .content(sprinklingReceiveRequestBody2)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
     public void 받기_API_는_뿌리기_응답으로_받은_토큰을_사용하지_않으면_404_코드를_반환해야_한다() throws Exception {
         String sprinklingReceiveRequestBody = createSprinklingReceiveRequestString("c0k");
         ErrorCode errorCode = ErrorCode.NOT_FOUND_ERROR;
