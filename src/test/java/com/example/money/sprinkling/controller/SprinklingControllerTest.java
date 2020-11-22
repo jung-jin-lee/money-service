@@ -36,10 +36,12 @@ public class SprinklingControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    public void 요청_헤더에_사용자_아이디와_방번호가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
+    public void 뿌리기_API_는_요청_헤더에_사용자_아이디와_방번호가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
         ErrorCode errorCode = ErrorCode.MISSING_REQUEST_HEADER_ERROR;
         mockMvc.perform(
                 post("/sprinkling")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("code").value(errorCode.getCode()))
@@ -47,10 +49,12 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 요청_헤더에_방번호가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
+    public void 뿌리기_API_는_요청_헤더에_방번호가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
         ErrorCode errorCode = ErrorCode.MISSING_REQUEST_HEADER_ERROR;
         mockMvc.perform(
                 post("/sprinkling")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
                         .header("X-USER-ID", 1)
         )
                 .andExpect(status().isBadRequest())
@@ -59,10 +63,12 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 요청_헤더에_사용자_아이디가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
+    public void 뿌리기_API_는_요청_헤더에_사용자_아이디가_없으면_400_코드와_함께_필수_헤더가_빠졌다_라는_메시지를_리턴해야한다() throws Exception {
         ErrorCode errorCode = ErrorCode.MISSING_REQUEST_HEADER_ERROR;
         mockMvc.perform(
                 post("/sprinkling")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
                         .header("X-ROOM-ID", "test")
         )
                 .andExpect(status().isBadRequest())
@@ -71,11 +77,12 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 요청_바디에_파라미터가_없으면_400_코드와_함께_유효하지_않은_바디라는_메시지를_리턴해야한다() throws Exception {
+    public void 뿌리기_API_는_요청_바디에_파라미터가_없으면_400_코드와_함께_유효하지_않은_바디라는_메시지를_리턴해야한다() throws Exception {
         ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY_ERROR;
         mockMvc.perform(
                     post("/sprinkling")
-
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON)
                             .header("X-USER-ID", 1)
                             .header("X-ROOM-ID", "test")
                 )
@@ -86,15 +93,16 @@ public class SprinklingControllerTest {
 
 
     @Test
-    public void 요청_바디에_금액이_0_이하이면_400_코드와_함께_유효하지_않은_바디라는_메시지를_리턴해야한다() throws Exception {
+    public void 뿌리기_API_는_요청_바디에_금액이_0_이하이면_400_코드와_함께_유효하지_않은_바디라는_메시지를_리턴해야한다() throws Exception {
+        String sprinklingCreateRequestBody = createSprinklingCreateRequestString(0, 5);
         ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY_ERROR;
         mockMvc.perform(
                 post("/sprinkling")
-
+                        .content(sprinklingCreateRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
                         .header("X-USER-ID", 1)
                         .header("X-ROOM-ID", "test")
-                        .param("amount", "0")
-                        .param("numPeople", "5")
         )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("code").value(errorCode.getCode()))
@@ -102,15 +110,16 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 요청_바디에_뿌릴_인원이_0_이하이면_400_코드와_함께_유효하지_않은_바디라는_메시지를_리턴해야한다() throws Exception {
+    public void 뿌리기_API_는_요청_바디에_뿌릴_인원이_0_이하이면_400_코드와_함께_유효하지_않은_바디라는_메시지를_리턴해야한다() throws Exception {
+        String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 0);
         ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY_ERROR;
         mockMvc.perform(
                 post("/sprinkling")
-
+                        .content(sprinklingCreateRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
                         .header("X-USER-ID", 1)
                         .header("X-ROOM-ID", "test")
-                        .param("amount", "5000")
-                        .param("numPeople", "0")
         )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("code").value(errorCode.getCode()))
@@ -118,7 +127,7 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 요청_바디에_금액과_뿌릴_인원이_값이_유효하면_201_코드와_함께_3자리_토큰을_리턴해야한다() throws Exception {
+    public void 뿌리기_API_는_요청_바디에_금액과_뿌릴_인원이_값이_유효하면_201_코드와_함께_3자리_토큰을_리턴해야한다() throws Exception {
         String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 3);
         MvcResult result = mockMvc.perform(
                 post("/sprinkling")
