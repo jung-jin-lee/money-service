@@ -34,15 +34,14 @@ public class SprinklingServiceTest {
     public void 뿌리기_통계는_7일_동안_볼_수_있다() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime eightDaysAgo = now.minusDays(8);
-        Long userId = (long) 1;
+        Long userId = 1L;
         Sprinkling sprinkling = Sprinkling.builder()
                 .amount(5000)
                 .numPeople(3)
                 .userIdCreated(userId)
                 .roomIdTargeted("test")
+                .createdAt(eightDaysAgo)
                 .build();
-
-        sprinkling.setCreatedAt(eightDaysAgo);
 
         assertThatThrownBy(() -> {
             sprinklingService.validateSprinklingStatisticsViewable(sprinkling);
