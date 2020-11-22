@@ -6,16 +6,21 @@ import com.example.money.sprinkling.exception.EverySprinklingItemExhaustedExcept
 import com.example.money.sprinkling.repository.SprinklingItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.PersistenceContext;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service("sprinklingItemService")
 public class SprinklingItemServiceImpl implements SprinklingItemService {
 
     private final SprinklingItemRepository sprinklingItemRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     public SprinklingItemServiceImpl(SprinklingItemRepository sprinklingItemRepository) {
@@ -56,8 +61,12 @@ public class SprinklingItemServiceImpl implements SprinklingItemService {
     }
 
 
+    @Transactional
     @Override
     public int updateUserIdReceivedFrom(Collection<SprinklingItem> sprinklingItemCollection, Long userId) {
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("javax.persistence.lock.timeout", 1000L);
+
         List<SprinklingItem> itemList = sprinklingItemCollection.stream()
                 .filter((item) -> item.getUserIdReceived() == null)
                 .collect(Collectors.toList());
@@ -65,6 +74,10 @@ public class SprinklingItemServiceImpl implements SprinklingItemService {
         for (var i = 0; i < itemListLength; i++) {
             try {
                 SprinklingItem sprinklingItem = itemList.get(i);
+                sprinklingItem = entityManager.find(SprinklingItem.class, sprinklingItem.getId(), LockModeType.PESSIMISTIC_WRITE, properties);
+                if (sprinklingItem.getUserIdReceived() != null) {
+                    continue;
+                }
                 sprinklingItem.setUserIdReceived(userId);
                 this.updateSprinklingItem(sprinklingItem);
 
