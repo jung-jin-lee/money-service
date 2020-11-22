@@ -14,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -146,9 +145,9 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 뿌리기_응답으로_받은_토큰을_사용하지_않으면_404_코드를_반환해야_한다() throws Exception {
-        ErrorCode errorCode = ErrorCode.NOT_FOUND_ERROR;
+    public void 받기_API_는_뿌리기_응답으로_받은_토큰을_사용하지_않으면_404_코드를_반환해야_한다() throws Exception {
         String sprinklingReceiveRequestBody = createSprinklingReceiveRequestString("c0k");
+        ErrorCode errorCode = ErrorCode.NOT_FOUND_ERROR;
         mockMvc.perform(
                 put("/sprinkling/receive")
                         .content(sprinklingReceiveRequestBody)
@@ -163,7 +162,7 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 뿌리기_금액이_5000원이면_받기_응답_금액은_1600원에서_1700원_사이여야_한다() throws Exception {
+    public void 받기_API_는_뿌리기_금액이_5000원이면_받기_응답_금액은_1600원에서_1700원_사이여야_한다() throws Exception {
         String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 3);
         MvcResult result = mockMvc.perform(
                 post("/sprinkling")
@@ -195,7 +194,7 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 동일한_사람이_받기를_2번_요청하면_2번쨰_요청은_400_응답을_반환해야_한다() throws Exception {
+    public void 받기_API_는_동일한_사람이_받기를_2번_요청하면_2번쨰_요청은_400_응답을_반환해야_한다() throws Exception {
         String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 3);
         MvcResult result = mockMvc.perform(
                 post("/sprinkling")
@@ -237,7 +236,7 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 뿌린_사람이_받기를_요청하면_400_응답을_반환해야_한다() throws Exception {
+    public void 받기_API_는_뿌린_사람이_받기를_요청하면_400_응답을_반환해야_한다() throws Exception {
         String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 3);
         MvcResult result = mockMvc.perform(
                 post("/sprinkling")
@@ -268,7 +267,7 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 받는_사람의_방이_뿌린_사람이_선택한_방과_다르면_400_응답을_반환해야_한다() throws Exception {
+    public void 받기_API_는_받는_사람의_방이_뿌린_사람이_선택한_방과_다르면_400_응답을_반환해야_한다() throws Exception {
         String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 3);
         MvcResult result = mockMvc.perform(
                 post("/sprinkling")
@@ -299,24 +298,23 @@ public class SprinklingControllerTest {
     }
 
     @Test
-    public void 뿌리고_10분이_지났으면_400_응답을_반환해야_한다() throws Exception {
-        String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 3);
-        MvcResult result = mockMvc.perform(
-                post("/sprinkling")
-                        .content(sprinklingCreateRequestBody)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .header("X-USER-ID", 1)
-                        .header("X-ROOM-ID", "test")
-        )
-                .andExpect(status().isCreated())
-                .andReturn();
+    public void 받기_API_는_뿌리고_10분이_지났으면_400_응답을_반환해야_한다() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime fifteenMinutesAgo = now.minusMinutes(15);
+        String token = "c0p";
+        Long userIdCreated = 3L;
+        Sprinkling sprinkling = Sprinkling.builder()
+                .roomIdTargeted("test")
+                .numPeople(3)
+                .amount(5000)
+                .token(token)
+                .userIdCreated(userIdCreated)
+                .createdAt(fifteenMinutesAgo)
+                .build();
 
-        SprinklingCreateResponse sprinklingCreateResponse = createSprinklingCreateResponse(result);
+        sprinklingRepository.save(sprinkling);
 
-        TimeUnit.MINUTES.sleep(11);
-
-        String sprinklingReceiveRequestBody = createSprinklingReceiveRequestString(sprinklingCreateResponse.getToken());
+        String sprinklingReceiveRequestBody = createSprinklingReceiveRequestString(token);
         ErrorCode errorCode = ErrorCode.SPRINKLING_INVALID_RECEIVE_DATE_TIME_ERROR;
         mockMvc.perform(
                 put("/sprinkling/receive")
