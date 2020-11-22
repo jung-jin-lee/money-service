@@ -10,7 +10,7 @@ public class SprinklingCreateRequestTest {
     @Test
     public void 토큰의_길이는_3이어야한다() {
         SprinklingCreateRequest request = new SprinklingCreateRequest();
-        Sprinkling sprinkling = request.toEntity((long) 1, "test");
+        Sprinkling sprinkling = request.toEntity(1L, "test");
 
         assertThat(sprinkling.getToken().length()).isEqualTo(3);
     }
