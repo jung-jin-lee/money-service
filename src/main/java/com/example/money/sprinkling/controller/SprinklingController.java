@@ -2,10 +2,7 @@ package com.example.money.sprinkling.controller;
 
 import com.example.money.common.code.ErrorCode;
 import com.example.money.common.dto.ErrorResponse;
-import com.example.money.sprinkling.dto.SprinklingCreateRequest;
-import com.example.money.sprinkling.dto.SprinklingCreateResponse;
-import com.example.money.sprinkling.dto.SprinklingReceiveRequest;
-import com.example.money.sprinkling.dto.SprinklingReceiveResponse;
+import com.example.money.sprinkling.dto.*;
 import com.example.money.sprinkling.entity.Sprinkling;
 import com.example.money.sprinkling.exception.*;
 import com.example.money.sprinkling.service.SprinklingItemService;
@@ -59,6 +56,21 @@ public class SprinklingController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @PostMapping("/sprinkling/stats")
+    @ResponseBody
+    public ResponseEntity<SprinklingStatisticsResponse> getSprinklingStatistics(
+            @RequestHeader(value = "X-USER-ID") Long userId,
+            @Valid @RequestBody SprinklingStatisticsRequest request
+    ) throws RuntimeException {
+        Sprinkling sprinkling = sprinklingService.findSprinklingByTokenAndUserIdCreated(request.getToken(), userId);
+
+        sprinklingService.validateSprinklingStatisticsViewable(sprinkling);
+
+        SprinklingStatisticsResponse response = SprinklingStatisticsResponse.of(sprinkling);
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
     @ExceptionHandler(AlreadyReceivedException.class)
     public ResponseEntity<ErrorResponse> handleAlreadyReceivedException(AlreadyReceivedException ex) {
         final ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.SPRINKLING_ALREADY_RECEIVED_ERROR);
@@ -90,6 +102,13 @@ public class SprinklingController {
     @ExceptionHandler(EverySprinklingItemExhaustedException.class)
     public ResponseEntity<ErrorResponse> handleEverySprinklingItemExhaustedException(EverySprinklingItemExhaustedException ex) {
         final ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.SPRINKLING_EXHAUSTED_ERROR);
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidStatisticsViewableDateTimeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidStatisticsViewableDateTimeException(InvalidStatisticsViewableDateTimeException ex) {
+        final ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.SPRINKLING_INVALID_STATISTICS_VIEWABLE_DATE_TIME_ERROR);
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }

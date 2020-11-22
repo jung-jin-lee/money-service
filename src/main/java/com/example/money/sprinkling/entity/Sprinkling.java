@@ -1,7 +1,6 @@
 package com.example.money.sprinkling.entity;
 
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
@@ -31,7 +30,6 @@ public class Sprinkling {
     @JoinColumn(name = "sprinkling_id")
     private Collection<SprinklingItem> sprinklingItems;
 
-    @CreationTimestamp
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
@@ -40,11 +38,12 @@ public class Sprinkling {
     private LocalDateTime deletedAt;
 
     @Builder
-    public Sprinkling(int amount, int numPeople, Long userIdCreated, String roomIdTargeted, String token) {
+    public Sprinkling(int amount, int numPeople, Long userIdCreated, String roomIdTargeted, String token, LocalDateTime createdAt) {
         this.amount = amount;
         this.numPeople = numPeople;
         this.userIdCreated = userIdCreated;
         this.roomIdTargeted = roomIdTargeted;
         this.token = token;
+        this.createdAt = createdAt;
     }
 }

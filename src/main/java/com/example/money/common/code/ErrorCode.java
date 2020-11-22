@@ -17,7 +17,8 @@ public enum ErrorCode {
     SPRINKLING_CANNOT_RECEIVED_USER_ID_CREATED_ERROR("S002", "Whoever created the sprinkling cannot receive it"),
     SPRINKLING_INVALID_RECEIVE_DATE_TIME_ERROR("S003", "Receiving is only valid for 10 minutes after sprinkling"),
     SPRINKLING_CANNOT_RECEIVED_DIFFERENT_ROOM_ID_ERROR("S004", "If room ID of sprinkling is different, you cannot receive it"),
-    SPRINKLING_EXHAUSTED_ERROR("S005", "All the sprinkles that can already be received are exhausted")
+    SPRINKLING_EXHAUSTED_ERROR("S005", "All the sprinkles that can already be received are exhausted"),
+    SPRINKLING_INVALID_STATISTICS_VIEWABLE_DATE_TIME_ERROR("S006", "Statistics viewing is possible only for 7 days after the sprinkling is created.")
     ;
 
 

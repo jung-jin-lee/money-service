@@ -5,10 +5,7 @@ import com.example.money.sprinkling.dto.SprinklingCreateRequest;
 import com.example.money.sprinkling.dto.SprinklingCreateResponse;
 import com.example.money.sprinkling.entity.Sprinkling;
 import com.example.money.sprinkling.entity.SprinklingItem;
-import com.example.money.sprinkling.exception.AlreadyReceivedException;
-import com.example.money.sprinkling.exception.CannotReceivedDifferentRoomIdException;
-import com.example.money.sprinkling.exception.CannotReceivedUserIdCreatedException;
-import com.example.money.sprinkling.exception.InvalidReceiveDateTimeException;
+import com.example.money.sprinkling.exception.*;
 import com.example.money.sprinkling.repository.SprinklingItemRepository;
 import com.example.money.sprinkling.repository.SprinklingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +58,16 @@ public class SprinklingServiceImpl implements SprinklingService {
     }
 
     @Override
+    public Sprinkling findSprinklingByTokenAndUserIdCreated(String token, Long userIdCreated) {
+        Sprinkling sprinkling = sprinklingRepository.findFirstByTokenAndUserIdCreated(token, userIdCreated);
+        if (sprinkling == null) {
+            throw new NotFoundException("sprinkling", "NOT_FOUND_SPRINKLING");
+        }
+
+        return sprinkling;
+    }
+
+    @Override
     public void validateSprinklingReceivable(Sprinkling sprinkling, Long userId, String roomId) {
         if (sprinkling.getUserIdCreated().equals(userId)) {
             throw new CannotReceivedUserIdCreatedException("ERROR_CANNOT_RECEIVED_USER_ID_CREATED");
@@ -79,6 +86,14 @@ public class SprinklingServiceImpl implements SprinklingService {
         }
         if (sprinkling.getSprinklingItems().stream().anyMatch((item) -> item.getUserIdReceived() == userId)) {
             throw new AlreadyReceivedException("ERROR_ALREADY_RECEIVED");
+        }
+    }
+
+    @Override
+    public void validateSprinklingStatisticsViewable(Sprinkling sprinkling) {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(sprinkling.getCreatedAt().plusDays(7))) {
+            throw new InvalidStatisticsViewableDateTimeException("ERROR_INVALID_STATISTICS_VIEWABLE_TIME");
         }
     }
 }

@@ -1,10 +1,9 @@
 package com.example.money.sprinkling.controller;
 
 import com.example.money.common.code.ErrorCode;
-import com.example.money.sprinkling.dto.SprinklingCreateRequest;
-import com.example.money.sprinkling.dto.SprinklingCreateResponse;
-import com.example.money.sprinkling.dto.SprinklingReceiveRequest;
-import com.example.money.sprinkling.dto.SprinklingReceiveResponse;
+import com.example.money.sprinkling.dto.*;
+import com.example.money.sprinkling.entity.Sprinkling;
+import com.example.money.sprinkling.repository.SprinklingRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,16 +13,21 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class SprinklingControllerTest {
+
+    @Autowired
+    private SprinklingRepository sprinklingRepository;
 
     @Autowired
     private MockMvc mockMvc;
@@ -318,6 +322,199 @@ public class SprinklingControllerTest {
                 .andExpect(jsonPath("message").value(errorCode.getMessage()));
     }
 
+    @Test
+    public void 조회_API_의_요청_바디에_값이_없이_요청하면_400_응답을_반환해야_한다() throws Exception {
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY_ERROR;
+        mockMvc.perform(
+                post("/sprinkling/stats")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 조회_API_의_요청_바디에_토큰_길이가_3자리가_아닌채로_요청하면_400_응답을_반환해야_한다() throws Exception {
+        String sprinklingStatisticsRequestBody = createSprinklingStatisticsRequestString("c0");
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY_ERROR;
+        mockMvc.perform(
+                post("/sprinkling/stats")
+                        .content(sprinklingStatisticsRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+
+        String sprinklingStatisticsRequestBody2 = createSprinklingStatisticsRequestString("c0f9");
+        mockMvc.perform(
+                post("/sprinkling/stats")
+                        .content(sprinklingStatisticsRequestBody2)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 조회_API_를_뿌린_사람이_아닌_다른_사람이_요청하면_404_응답을_반환해야_한다() throws Exception {
+        String sprinklingCreateRequestBody = createSprinklingCreateRequestString(5000, 3);
+        MvcResult result = mockMvc.perform(
+                post("/sprinkling")
+                        .content(sprinklingCreateRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 1)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        SprinklingCreateResponse sprinklingCreateResponse = createSprinklingCreateResponse(result);
+
+        String sprinklingStatisticsRequestBody = createSprinklingStatisticsRequestString(sprinklingCreateResponse.getToken());
+        ErrorCode errorCode = ErrorCode.NOT_FOUND_ERROR;
+        mockMvc.perform(
+                post("/sprinkling/stats")
+                        .content(sprinklingStatisticsRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 조회_API_를_유효하지_않은_토큰으로_요청하면_404_응답을_반환해야_한다() throws Exception {
+        String sprinklingStatisticsRequestBody = createSprinklingStatisticsRequestString("c0p");
+        ErrorCode errorCode = ErrorCode.NOT_FOUND_ERROR;
+        mockMvc.perform(
+                post("/sprinkling/stats")
+                        .content(sprinklingStatisticsRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 조회_API_를_7일이_지난_뿌리기_토큰으로_요청하면_400_응답을_반환해야_한다() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime eightDaysAgo = now.minusDays(8);
+        String token = "c0p";
+        Long userIdCreated = 3L;
+        Sprinkling sprinkling = Sprinkling.builder()
+                .roomIdTargeted("test")
+                .numPeople(3)
+                .amount(5000)
+                .token(token)
+                .userIdCreated(3L)
+                .createdAt(eightDaysAgo)
+                .build();
+
+        sprinklingRepository.save(sprinkling);
+        String sprinklingStatisticsRequestBody = createSprinklingStatisticsRequestString(token);
+        ErrorCode errorCode = ErrorCode.SPRINKLING_INVALID_STATISTICS_VIEWABLE_DATE_TIME_ERROR;
+        mockMvc.perform(
+                post("/sprinkling/stats")
+                        .content(sprinklingStatisticsRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", userIdCreated)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("code").value(errorCode.getCode()))
+                .andExpect(jsonPath("message").value(errorCode.getMessage()));
+    }
+
+    @Test
+    public void 조회_API_요청이_유효한_경우_현재_상태를_응답해야_한다() throws Exception {
+        LocalDateTime startDateTime = LocalDateTime.now();
+        int amount = 5000;
+        String sprinklingCreateRequestBody = createSprinklingCreateRequestString(amount, 3);
+        MvcResult result = mockMvc.perform(
+                post("/sprinkling")
+                        .content(sprinklingCreateRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        SprinklingCreateResponse sprinklingCreateResponse = createSprinklingCreateResponse(result);
+
+        String sprinklingReceiveRequestBody = createSprinklingReceiveRequestString(sprinklingCreateResponse.getToken());
+        MvcResult resultReceived1 = mockMvc.perform(
+                put("/sprinkling/receive")
+                        .content(sprinklingReceiveRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 1)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isOk())
+                .andReturn();
+
+        SprinklingReceiveResponse sprinklingReceiveResponse1 = createSprinklingReceiveResponse(resultReceived1);
+
+        MvcResult resultReceived2 = mockMvc.perform(
+                put("/sprinkling/receive")
+                        .content(sprinklingReceiveRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 2)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isOk())
+                .andReturn();
+
+        SprinklingReceiveResponse sprinklingReceiveResponse2 = createSprinklingReceiveResponse(resultReceived2);
+
+        String sprinklingStatisticsRequestBody = createSprinklingStatisticsRequestString(sprinklingCreateResponse.getToken());
+        MvcResult resultStatistics = mockMvc.perform(
+                post("/sprinkling/stats")
+                        .content(sprinklingStatisticsRequestBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-USER-ID", 3)
+                        .header("X-ROOM-ID", "test")
+        )
+                .andExpect(status().isOk())
+                .andReturn();
+
+        SprinklingStatisticsResponse sprinklingStatisticsResponse = createSprinklingStatisticsResponse(resultStatistics);
+
+        LocalDateTime endDateTime = LocalDateTime.now();
+        int amountReceived = sprinklingReceiveResponse1.getAmount() + sprinklingReceiveResponse2.getAmount();
+
+        assertThat(sprinklingStatisticsResponse.getSprinkledAt()).isBetween(startDateTime, endDateTime);
+        assertThat(sprinklingStatisticsResponse.getAmountSprinkled()).isEqualTo(amount);
+        assertThat(sprinklingStatisticsResponse.getAmountReceived()).isEqualTo(amountReceived);
+        assertThat(sprinklingStatisticsResponse.getReceivedInfoList().size()).isEqualTo(2);
+        assertThat(sprinklingStatisticsResponse.getReceivedInfoList()).extracting("userId").containsOnly(1L, 2L);
+    }
+
     private SprinklingCreateRequest createSprinklingCreateRequest(int amount, int numPeople) {
         SprinklingCreateRequest sprinklingCreateRequest = new SprinklingCreateRequest();
         sprinklingCreateRequest.setAmount(amount);
@@ -333,6 +530,12 @@ public class SprinklingControllerTest {
         return sprinklingReceiveRequest;
     }
 
+    private SprinklingStatisticsRequest createSprinklingStatisticsRequest(String token) {
+        SprinklingStatisticsRequest sprinklingStatisticsRequest = new SprinklingStatisticsRequest();
+        sprinklingStatisticsRequest.setToken(token);
+
+        return sprinklingStatisticsRequest;
+    }
 
     private String createSprinklingCreateRequestString(int amount, int numPeople) throws Exception {
         SprinklingCreateRequest sprinklingCreateRequest = createSprinklingCreateRequest(amount, numPeople);
@@ -346,6 +549,12 @@ public class SprinklingControllerTest {
         return objectMapper.writeValueAsString(sprinklingReceiveRequest);
     }
 
+    private String createSprinklingStatisticsRequestString(String token) throws Exception {
+        SprinklingStatisticsRequest sprinklingStatisticsRequest = createSprinklingStatisticsRequest(token);
+
+        return objectMapper.writeValueAsString(sprinklingStatisticsRequest);
+    }
+
     private SprinklingCreateResponse createSprinklingCreateResponse(MvcResult result) throws Exception {
         String content = result.getResponse().getContentAsString();
 
@@ -356,5 +565,11 @@ public class SprinklingControllerTest {
         String content = result.getResponse().getContentAsString();
 
         return objectMapper.readValue(content, SprinklingReceiveResponse.class);
+    }
+
+    private SprinklingStatisticsResponse createSprinklingStatisticsResponse(MvcResult result) throws Exception {
+        String content = result.getResponse().getContentAsString();
+
+        return objectMapper.readValue(content, SprinklingStatisticsResponse.class);
     }
 }

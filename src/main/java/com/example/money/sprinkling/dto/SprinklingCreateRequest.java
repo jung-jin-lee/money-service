@@ -8,6 +8,7 @@ import lombok.Setter;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -43,6 +44,7 @@ public class SprinklingCreateRequest {
                 .userIdCreated(userIdCreated)
                 .roomIdTargeted(roomIdTargeted)
                 .token(generateToken())
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 }
