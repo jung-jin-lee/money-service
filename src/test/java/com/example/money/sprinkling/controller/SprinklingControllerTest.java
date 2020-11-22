@@ -407,7 +407,7 @@ public class SprinklingControllerTest {
 
     @Test
     public void 조회_API_를_유효하지_않은_토큰으로_요청하면_404_응답을_반환해야_한다() throws Exception {
-        String sprinklingStatisticsRequestBody = createSprinklingStatisticsRequestString("c0p");
+        String sprinklingStatisticsRequestBody = createSprinklingStatisticsRequestString(SprinklingCreateRequest.generateToken());
         ErrorCode errorCode = ErrorCode.NOT_FOUND_ERROR;
         mockMvc.perform(
                 post("/sprinkling/stats")
@@ -426,14 +426,14 @@ public class SprinklingControllerTest {
     public void 조회_API_를_7일이_지난_뿌리기_토큰으로_요청하면_400_응답을_반환해야_한다() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime eightDaysAgo = now.minusDays(8);
-        String token = "c0p";
+        String token = SprinklingCreateRequest.generateToken();
         Long userIdCreated = 3L;
         Sprinkling sprinkling = Sprinkling.builder()
                 .roomIdTargeted("test")
                 .numPeople(3)
                 .amount(5000)
                 .token(token)
-                .userIdCreated(3L)
+                .userIdCreated(userIdCreated)
                 .createdAt(eightDaysAgo)
                 .build();
 

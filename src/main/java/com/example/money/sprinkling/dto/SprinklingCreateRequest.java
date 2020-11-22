@@ -22,7 +22,7 @@ public class SprinklingCreateRequest {
     @Positive(message = "ERROR_NUM_PEOPLE_BIGGER_THAN_ZERO")
     int numPeople;
 
-    private static String generateToken() {
+    public static String generateToken() {
         int origin = 48; // "0"
         int bound = 122; // "z"
         int tokenLength = 3;
