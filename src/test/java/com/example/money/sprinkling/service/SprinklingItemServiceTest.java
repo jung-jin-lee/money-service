@@ -2,8 +2,10 @@ package com.example.money.sprinkling.service;
 
 import com.example.money.sprinkling.entity.Sprinkling;
 import com.example.money.sprinkling.entity.SprinklingItem;
+import com.example.money.sprinkling.repository.SprinklingItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import java.util.List;
 
@@ -13,9 +15,12 @@ public class SprinklingItemServiceTest {
 
     private SprinklingItemService sprinklingItemService;
 
+    @Mock
+    private SprinklingItemRepository sprinklingItemRepository;
+
     @BeforeEach
     public void init() {
-        sprinklingItemService = new SprinklingItemServiceImpl();
+        sprinklingItemService = new SprinklingItemServiceImpl(sprinklingItemRepository);
     }
 
     @Test

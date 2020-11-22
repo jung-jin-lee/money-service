@@ -1,6 +1,7 @@
 package com.example.money.common.dto;
 
 import com.example.money.common.code.ErrorCode;
+import com.example.money.common.exception.NotFoundException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -55,6 +56,12 @@ public class ErrorResponse {
         final List<ErrorResponse.FieldError> errors = ErrorResponse.FieldError.of(ex.getHeaderName(), "", ex.getMessage());
 
         return new ErrorResponse(ErrorCode.MISSING_REQUEST_HEADER_ERROR, errors);
+    }
+
+    public static ErrorResponse of(NotFoundException ex) {
+        final List<ErrorResponse.FieldError> errors = ErrorResponse.FieldError.of(ex.getResource(), "", ex.getMessage());
+
+        return new ErrorResponse(ErrorCode.NOT_FOUND_ERROR, errors);
     }
 
     @Getter

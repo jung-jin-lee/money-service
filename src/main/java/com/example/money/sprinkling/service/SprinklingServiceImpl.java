@@ -1,15 +1,21 @@
 package com.example.money.sprinkling.service;
 
+import com.example.money.common.exception.NotFoundException;
 import com.example.money.sprinkling.dto.SprinklingCreateRequest;
 import com.example.money.sprinkling.dto.SprinklingCreateResponse;
 import com.example.money.sprinkling.entity.Sprinkling;
 import com.example.money.sprinkling.entity.SprinklingItem;
+import com.example.money.sprinkling.exception.AlreadyReceivedException;
+import com.example.money.sprinkling.exception.CannotReceivedDifferentRoomIdException;
+import com.example.money.sprinkling.exception.CannotReceivedUserIdCreatedException;
+import com.example.money.sprinkling.exception.InvalidReceiveDateTimeException;
 import com.example.money.sprinkling.repository.SprinklingItemRepository;
 import com.example.money.sprinkling.repository.SprinklingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service("sprinklingService")
@@ -42,5 +48,37 @@ public class SprinklingServiceImpl implements SprinklingService {
         return SprinklingCreateResponse.builder()
                 .token(sprinkling.getToken())
                 .build();
+    }
+
+    @Override
+    public Sprinkling findSprinklingByToken(String token) {
+        Sprinkling sprinkling = sprinklingRepository.findFirstByToken(token);
+        if (sprinkling == null) {
+            throw new NotFoundException("sprinkling", "NOT_FOUND_SPRINKLING");
+        }
+
+        return sprinkling;
+    }
+
+    @Override
+    public void validateSprinklingReceivable(Sprinkling sprinkling, Long userId, String roomId) {
+        if (sprinkling.getUserIdCreated().equals(userId)) {
+            throw new CannotReceivedUserIdCreatedException("ERROR_CANNOT_RECEIVED_USER_ID_CREATED");
+        }
+        if (!sprinkling.getRoomIdTargeted().equals(roomId)) {
+            throw new CannotReceivedDifferentRoomIdException("ERROR_NOT_EQUAL_ROOM_ID");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(sprinkling.getCreatedAt().plusMinutes(10))) {
+            throw new InvalidReceiveDateTimeException("ERROR_INVALID_RECEIVE_TIME");
+        }
+
+        if (sprinkling.getSprinklingItems() == null) {
+            throw new NotFoundException("sprinklingItem", "NOT_FOUND_SPRINKLING_ITEM");
+        }
+        if (sprinkling.getSprinklingItems().stream().anyMatch((item) -> item.getUserIdReceived() == userId)) {
+            throw new AlreadyReceivedException("ERROR_ALREADY_RECEIVED");
+        }
     }
 }
