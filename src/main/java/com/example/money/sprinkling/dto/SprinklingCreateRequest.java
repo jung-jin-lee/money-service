@@ -16,11 +16,11 @@ import java.time.LocalDateTime;
 public class SprinklingCreateRequest {
     @NotNull
     @Positive(message = "ERROR_AMOUNT_BIGGER_THAN_ZERO")
-    int amount;
+    private int amount;
 
     @NotNull
     @Positive(message = "ERROR_NUM_PEOPLE_BIGGER_THAN_ZERO")
-    int numPeople;
+    private int numPeople;
 
     public static String generateToken() {
         int origin = 48; // "0"
